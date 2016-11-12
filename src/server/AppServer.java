@@ -5,13 +5,13 @@ import server.wordDatabase.WordDatabase;
 
 public class AppServer {
 	
-	Server server = null;
+	GuessServer server = null;
 	WordDatabase wdb = null;
 	HandlerClientManager hcManager = null;
 	HandlerClientFactory hcFactory = null;
 
 	private AppServer(int port) throws Exception {
-		server = new Server(port);
+		server = new GuessServer(port);
 		wdb = new DefaultWordDatabase("/data/frutas.txt");
 		hcFactory = new HandlerClientFactoryImpl(wdb);
 		hcManager = new HandlerClientManagerImpl(hcFactory);

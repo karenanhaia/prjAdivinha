@@ -5,13 +5,13 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
 
-public class Server implements Runnable {
+public class GuessServer implements Runnable {
 
 	private ServerSocket serverSocket;
 	private HandlerClientManager hClienteManager = null;
 	private boolean done;
 	
-	public Server(int port) throws IOException {
+	public GuessServer(int port) throws IOException {
 		super();
 		serverSocket = new ServerSocket(port);
 		done = false;
