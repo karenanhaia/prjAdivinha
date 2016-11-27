@@ -20,12 +20,12 @@ public class HandlerClientImpl implements HandlerClient {
 	private Word word;
 	private int countTries;
 
-	private static final Message msgWelcome = new Message(Message.MessageType.WELCOME, "Olá, seja bem vindo!");
+	private static final Message msgWelcome = new Message(Message.MessageType.WELCOME, "Olá, seja bem vindo ao GUESS!");
 	private static final Message msgEnd = new Message(Message.MessageType.END, "Game finished!");
 
 	public HandlerClientImpl(Socket socket) throws IOException {
 		this.socket = socket;
-		socket.setSoTimeout(60 * 2 * 1000);
+		socket.setSoTimeout(60 * 5 * 1000);
 		ois = new ObjectInputStream(socket.getInputStream());
 		oos = new ObjectOutputStream(socket.getOutputStream());
 	}
@@ -36,6 +36,7 @@ public class HandlerClientImpl implements HandlerClient {
 
 	public void sent(Message msg) {
 		try {
+			System.out.printf("\nSent: %s %s\n", msg.getContent(), msg.getType());
 			oos.writeObject(msg);
 		} catch (IOException e) {
 			done = true;
@@ -67,26 +68,27 @@ public class HandlerClientImpl implements HandlerClient {
 		this.countTries = 2 * this.word.getWord().length();
 		Message msg = new Message(Message.MessageType.NEW_WORD, word.getStrDash());
 		sent(msg);
-		System.out.println(word.getWord() + " has sent.");
+		System.out.println("'" + word.getWord() + "' has sent.");
 	}
 
-	private void tryLetter(String content) {
+	private void tryLetter(Character c) {
+		System.out.printf("\nTrying: %c", c);
 		--countTries;
 		Message msg;
 
-		if (word.setDash(content.charAt(0))) {
-			if (word.isComplete()) {
-				msg = new Message(Message.MessageType.CONGRATULATION,
-						"Parabéns! Você completou a palavra: " + word.getWord());
-				sent(msg);
-				return;
-			} else
-				msg = new Message(Message.MessageType.SUCCESS, word.getStrDash());
+		if (this.word.setDash(c)) {
+			if (this.word.isComplete())
+				msg = new Message(Message.MessageType.CONGRATULATION, this.word.getWord());
+			else
+				msg = new Message(Message.MessageType.SUCCESS, this.word.getStrDash());
+
+			sent(msg);
+			return;
 		}
 		if (countTries == 0)
-			msg = new Message(Message.MessageType.GAME_OVER, "Game Over! Número de tentativas chegou ao limite.");
+			msg = new Message(Message.MessageType.GAME_OVER, "Game Over! Você atingiu o limite de erros. Palavra sorteada: " + this.word.getWord());
 		else
-			msg = new Message(Message.MessageType.SORRY, word.getStrDash());
+			msg = new Message(Message.MessageType.SORRY, this.word.getStrDash());
 
 		sent(msg);
 	}
@@ -94,15 +96,15 @@ public class HandlerClientImpl implements HandlerClient {
 	private void tryWord(String content) {
 		Message msg;
 		if (word.verify(content))
-			msg = new Message(Message.MessageType.CONGRATULATION,
-					"Parabéns! Você acertou a palavra: " + word.getWord());
+			msg = new Message(Message.MessageType.CONGRATULATION, this.word.getWord());
 		else
-			msg = new Message(Message.MessageType.GAME_OVER, "Game Over! A palavra está incorreta.");
+			msg = new Message(Message.MessageType.GAME_OVER, "Game Over! A palavra está incorreta. Palavra sorteada: " + this.word.getWord());
 		sent(msg);
 	}
 
-	private void end() {
-		sent(msgEnd);
+	private void end(String msg) {
+		//sent(msgEnd);
+		System.out.println(msg);
 		closeConnection();
 		done = true;
 	}
@@ -113,13 +115,13 @@ public class HandlerClientImpl implements HandlerClient {
 			pickNewWord();
 			break;
 		case TRY_LETTER:
-			tryLetter((String) msg.getContent());
+			tryLetter((Character) msg.getContent());
 			break;
 		case TRY_WORD:
-			tryWord((String) msg.getContent());
+			tryWord(msg.getContent().toString());
 			break;
 		case END:
-			end();
+			end(msg.getContent().toString());
 			break;
 		}
 	}
@@ -129,7 +131,7 @@ public class HandlerClientImpl implements HandlerClient {
 			Message msg = (Message) ois.readObject();
 			handleMessage(msg);
 		} catch (SocketTimeoutException e) {
-			closeConnection("Excedeu o tempo sem atividade.");
+			closeConnection("Excedeu o limite de tempo sem atividade.");
 			done = true;
 		} catch (ClassNotFoundException | IOException e) {
 			e.printStackTrace();

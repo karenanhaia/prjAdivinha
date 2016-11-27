@@ -15,7 +15,7 @@ public class GuessServer implements Runnable {
 		super();
 		serverSocket = new ServerSocket(port);
 		done = false;
-		serverSocket.setSoTimeout(60*1000);
+		serverSocket.setSoTimeout(120*1000);
 	}
 	
 	public void setHandlerClientManager(HandlerClientManager hcm) {
@@ -34,6 +34,7 @@ public class GuessServer implements Runnable {
 			System.out.printf("Server is listen on port %d\n", serverSocket.getLocalPort());
 			try {
 				Socket socket = serverSocket.accept();
+				System.out.println("Conexão estabelecida\n");
 				this.hClienteManager.handle(socket);
 			} catch (SocketTimeoutException ste) {
 				System.out.printf("Timemout - None connections\n");
